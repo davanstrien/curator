@@ -1,7 +1,7 @@
 import logging
 import time
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Optional
 
@@ -13,17 +13,22 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.table import Table
 
+from bespokelabs.curator.telemetry.client import TelemetryEvent, telemetry_client
 from bespokelabs.curator.types.generic_response import TokenUsage
 
 logger = logging.getLogger(__name__)
 
 
-class TokenLimitStrategy(Enum):
+class TokenLimitStrategy(str, Enum):
     """Token limit Strategy enum."""
 
     combined = "combined"
     seperate = "seperate"
     default = "combined"
+
+    def __str__(self):
+        """String representation of the token limit strategy."""
+        return self.value
 
 
 class _TokenCount(BaseModel):
@@ -212,6 +217,7 @@ class OnlineStatusTracker:
         )
 
         # Update the progress display
+
         self._progress.update(
             self._task_id,
             completed=self.num_tasks_succeeded + self.num_tasks_already_completed,
@@ -278,6 +284,13 @@ class OnlineStatusTracker:
         table.add_row("Output Tokens per Minute", f"{output_tpm:.1f}")
 
         self._console.print(table)
+
+        telemetry_client.capture(
+            TelemetryEvent(
+                event_type="OnlineRequest",
+                metadata=asdict(self),
+            )
+        )
 
     def __str__(self):
         """String representation of the status tracker."""

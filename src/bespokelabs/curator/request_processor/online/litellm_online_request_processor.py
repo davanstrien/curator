@@ -44,8 +44,6 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
 
     def __init__(self, config: OnlineRequestProcessorConfig):
         """Initialize the LiteLLMOnlineRequestProcessor."""
-        self.default_max_concurrent_requests = 200
-
         super().__init__(config)
         if self.config.base_url is not None:
             litellm.api_base = self.config.base_url
@@ -174,6 +172,8 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
             return 0
 
     def _get_max_tokens(self):
+        if self.config.generation_params.get("max_tokens"):
+            return self.config.generation_params["max_tokens"]
         return litellm.get_max_tokens(model=self.config.model)
 
     def estimate_total_tokens(self, messages: list) -> _TokenCount:

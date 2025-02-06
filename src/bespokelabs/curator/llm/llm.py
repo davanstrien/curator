@@ -11,6 +11,7 @@ from datasets import Dataset
 from pydantic import BaseModel
 from xxhash import xxh64
 
+from bespokelabs.curator.constants import _CURATOR_DEFAULT_CACHE_DIR
 from bespokelabs.curator.db import MetadataDB
 from bespokelabs.curator.llm.prompt_formatter import PromptFormatter
 from bespokelabs.curator.request_processor._factory import _RequestProcessorFactory
@@ -19,7 +20,6 @@ from bespokelabs.curator.request_processor.config import BackendParamsType
 if TYPE_CHECKING:
     from datasets import Dataset
 
-_CURATOR_DEFAULT_CACHE_DIR = "~/.cache/curator"
 T = TypeVar("T")
 _DictOrBaseModel = Dict[str, Any] | BaseModel
 logger = logging.getLogger(__name__)

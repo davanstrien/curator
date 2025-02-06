@@ -37,6 +37,7 @@ vertexai= "1.71.1"
 vllm = { version = "^0.6.3", optional = true }
 aiodocker = { version = "^0.24.0", optional = true }
 ray = { version = "^2.41.0", optional = true }
+posthog = "^3.11.0"
 
 [tool.poetry.extras]
 vllm = ["vllm"]

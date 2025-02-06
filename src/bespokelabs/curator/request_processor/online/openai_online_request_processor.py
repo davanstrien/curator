@@ -172,6 +172,10 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
 
         return False
 
+    @property
+    def _multimodal_prompt_supported(self) -> bool:
+        return True
+
     def create_api_specific_request_online(self, generic_request: GenericRequest) -> dict:
         """Create an OpenAI-specific request from a generic request.
 
@@ -198,7 +202,6 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
         request_header = {"Authorization": f"Bearer {self.api_key}"}
         if "/deployments" in self.url:  # Azure deployment
             request_header = {"api-key": f"{self.api_key}"}
-
         async with session.post(
             self.url,
             headers=request_header,
@@ -210,7 +213,8 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
             if "error" in response:
                 status_tracker.num_api_errors += 1
                 error = response["error"]
-                if "rate limit" in error.get("message", "").lower():
+                error_message = error if isinstance(error, str) else error.get("message", "")
+                if "rate limit" in error_message.lower():
                     status_tracker.time_of_last_rate_limit_error = time.time()
                     status_tracker.num_rate_limit_errors += 1
                     status_tracker.num_api_errors -= 1

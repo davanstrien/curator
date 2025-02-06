@@ -18,6 +18,7 @@ import aiofiles
 import aiohttp
 
 from bespokelabs.curator.llm.prompt_formatter import PromptFormatter
+from bespokelabs.curator.request_processor import _DEFAULT_COST_MAP
 from bespokelabs.curator.request_processor.base_request_processor import BaseRequestProcessor
 from bespokelabs.curator.request_processor.config import OnlineRequestProcessorConfig
 from bespokelabs.curator.request_processor.event_loop import run_in_event_loop
@@ -67,11 +68,14 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
     def __init__(self, config: OnlineRequestProcessorConfig):
         """Initialize the BaseOnlineRequestProcessor."""
         super().__init__(config)
+
+        defaults = _DEFAULT_COST_MAP["online"]["default"]["ratelimit"]
         self.token_limit_strategy = TokenLimitStrategy.default
         self.manual_max_requests_per_minute = config.max_requests_per_minute
         self.manual_max_tokens_per_minute = config.max_tokens_per_minute
-        self.default_max_requests_per_minute = 10
-        self.default_max_tokens_per_minute = 100_000
+        self.default_max_requests_per_minute = defaults["max_requests_per_minute"]
+        self.default_max_concurrent_requests = defaults["max_concurrent_requests"]
+        self.default_max_tokens_per_minute = defaults["max_tokens_per_minute"][self.token_limit_strategy.value]
         self.header_based_max_requests_per_minute = None
         self.header_based_max_tokens_per_minute = None
 
@@ -89,6 +93,16 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
     def backend(self) -> str:
         """Backend property."""
         return "base"
+
+    def validate_config(self):
+        """Validate online request processor configuration.
+
+        Ensures that configuration parameters are set correctly.
+
+        Raises:
+            ValueError: If configuration parameters are invalid
+        """
+        pass
 
     @property
     def max_concurrent_requests(self) -> int | None:
@@ -262,6 +276,7 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
                 async for line in file:
                     if self._semaphore:
                         await self._semaphore.acquire()
+
                     generic_request = GenericRequest.model_validate_json(line)
 
                     if generic_request.original_row_idx in completed_request_ids:

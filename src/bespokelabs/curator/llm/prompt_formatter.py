@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 from pydantic import BaseModel, ValidationError
 
 from bespokelabs.curator.types.generic_request import GenericRequest
+from bespokelabs.curator.types.prompt import _MultiModalPrompt
 
 T = TypeVar("T")
 _DictOrBaseModel = Union[Dict[str, Any], BaseModel]
@@ -79,13 +80,18 @@ class PromptFormatter:
         else:
             raise ValueError(f"Prompting function {self.prompt_func} must have 0 or 1 arguments.")
 
+        multimodal_prompt = False
         if isinstance(prompts, str):
             messages = [{"role": "user", "content": prompts}]
         elif isinstance(prompts, list):
+            multimodal_prompt = None
             _validate_messages(prompts)
             messages = prompts
+        elif isinstance(prompts, tuple):
+            multimodal_prompt = True
+            messages = [{"role": "user", "content": _MultiModalPrompt.load(prompts)}]
         else:
-            raise ValueError("The return value of the prompt_func must be a list of dictionaries.")
+            raise ValueError(f"The return value of the `prompt` method {type(prompts)} did not match the expected format.")
 
         # Convert BaseModel to dict for serialization
         if isinstance(row, BaseModel):
@@ -98,6 +104,7 @@ class PromptFormatter:
             original_row_idx=idx,
             response_format=(self.response_format.model_json_schema() if self.response_format else None),
             generation_params=self.generation_params,
+            multimodal_prompt=multimodal_prompt,
         )
 
     def response_to_response_format(self, response_message: str | dict) -> Optional[dict | str]:

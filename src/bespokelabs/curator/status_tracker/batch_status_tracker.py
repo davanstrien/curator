@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
+from bespokelabs.curator.telemetry.client import TelemetryEvent, telemetry_client
 from bespokelabs.curator.types.generic_batch import GenericBatch, GenericBatchStatus
 from bespokelabs.curator.types.generic_response import TokenUsage
 
@@ -91,6 +92,14 @@ class BatchStatusTracker(BaseModel):
         if self._progress:
             self._progress.stop()
             self.display_final_stats()
+
+        # update anonymized telemetry
+        telemetry_client.capture(
+            TelemetryEvent(
+                event_type="BatchRequest",
+                metadata=self.model_dump(),
+            )
+        )
 
     def update_display(self):
         """Update statistics with token usage and cost information."""
